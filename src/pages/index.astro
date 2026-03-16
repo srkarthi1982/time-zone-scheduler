@@ -1,93 +1,147 @@
 ---
+import { AvButton, AvCard, AvContainer, AvTimeline } from "@ansiversa/components";
 import AppShell from "../layouts/AppShell.astro";
-import { AvContainer, AvButton } from "@ansiversa/components";
 
 const title = "Time Zone Scheduler – Ansiversa";
-const description = "Find meeting-friendly times.";
+const description = "Find meeting-friendly times across time zones without the spreadsheet chaos.";
+
+const timelineItems = [
+  {
+    date: "Step 01",
+    title: "Add participants",
+    body: "Capture each attendee, their time zone, and whether they are required.",
+  },
+  {
+    date: "Step 02",
+    title: "Set availability",
+    body: "Define working hours and optional preferred windows for the target meeting date.",
+  },
+  {
+    date: "Step 03",
+    title: "Review ranked slots",
+    body: "Generate overlap options and pick the fairest recommendation in seconds.",
+  },
+];
+
+const faqItems = [
+  {
+    question: "Does V1 support recurring meetings?",
+    answer: "No. V1 is intentionally focused on one meeting date per planning session.",
+  },
+  {
+    question: "Do I need Google or Microsoft calendar access?",
+    answer: "No. Availability is entered directly, so there is no calendar dependency in V1.",
+  },
+  {
+    question: "Are daylight-saving rules handled?",
+    answer: "Yes. The scheduler uses real IANA time zones through the runtime, not hardcoded offsets.",
+  },
+];
 ---
 
 <AppShell title={title} description={description}>
-  <!-- Hero -->
-  <section class="av-hero">
-    <AvContainer size="narrow" className="av-hero__content--narrow">
-      <div class="av-hero__content">
-        <div class="av-kicker">
-          <span>Developer & Utility · Ansiversa Mini App</span>
+  <section class="av-hero tz-hero">
+    <AvContainer size="default">
+      <div class="tz-hero-grid">
+        <div class="av-auth-stack-md">
+          <div class="av-kicker">
+            <span>Utility · Ansiversa Mini App</span>
+          </div>
+          <h1 class="av-section-title">Find the best time across time zones.</h1>
+          <p class="av-section-lead">
+            Plan calls, interviews, and team sessions with ranked overlap suggestions that respect
+            local working hours.
+          </p>
+          <ul class="av-list">
+            <li>Clear participant windows instead of manual offset math</li>
+            <li>Deterministic server-side ranking with no AI dependency</li>
+            <li>Saved schedules you can revisit and refine later</li>
+          </ul>
+          <div class="av-row-wrap">
+            <AvButton href="/app">Start planning</AvButton>
+            <AvButton href="/login" variant="ghost">Sign in</AvButton>
+          </div>
+          <p class="av-text-soft">Fast to use. Fair to everyone involved.</p>
         </div>
-        <h1 class="av-gradient-text">Time Zone Scheduler</h1>
-        <p>
-          Find meeting-friendly times.
-        </p>
-      </div>
-      <div class="av-cta-row">
-        <AvButton href="https://time-zone-scheduler.ansiversa.com">Launch Time</AvButton>
+
+        <AvCard variant="soft" className="tz-hero-card av-auth-stack-sm">
+          <p class="av-kicker">Best for</p>
+          <h2 class="av-card-heading">Distributed teams, client calls, interviews, and global collaboration.</h2>
+          <div class="tz-stat-grid">
+            <div class="tz-stat">
+              <span class="tz-stat-value">1 date</span>
+              <span class="av-text-soft">Focused planning session</span>
+            </div>
+            <div class="tz-stat">
+              <span class="tz-stat-value">3 tables</span>
+              <span class="av-text-soft">Compact V1 data model</span>
+            </div>
+            <div class="tz-stat">
+              <span class="tz-stat-value">0 APIs</span>
+              <span class="av-text-soft">No external time-zone dependency</span>
+            </div>
+          </div>
+        </AvCard>
       </div>
     </AvContainer>
   </section>
 
-  <!-- Problem -->
   <section class="av-section">
-    <AvContainer size="narrow">
+    <AvContainer size="default">
       <div class="av-section-header">
-        <h2 class="av-section-title">The problem it solves</h2>
-        <p class="av-section-lead">
-          You often switch between many small tools for everyday tasks.
-        </p>
+        <div class="av-kicker"><span>How it works</span></div>
+        <h2 class="av-section-title">Three steps to a usable meeting recommendation</h2>
+        <p class="av-section-lead">Built for speed, clarity, and boring reliability.</p>
       </div>
-      <div class="av-section-body space-y-3 text-slate-300">
-        <p>Time Zone Scheduler gives you one focused place to get this specific job done.</p>
+      <AvTimeline items={timelineItems} />
+    </AvContainer>
+  </section>
+
+  <section class="av-section">
+    <AvContainer size="default">
+      <div class="tz-benefit-grid">
+        <AvCard variant="soft" className="av-auth-stack-sm">
+          <h3 class="av-card-heading">Avoid time-zone confusion</h3>
+          <p class="av-text-soft">Keep every participant anchored to their real IANA time zone.</p>
+        </AvCard>
+        <AvCard variant="soft" className="av-auth-stack-sm">
+          <h3 class="av-card-heading">Respect local availability</h3>
+          <p class="av-text-soft">Capture required attendance, preferred windows, and working-hour limits.</p>
+        </AvCard>
+        <AvCard variant="soft" className="av-auth-stack-sm">
+          <h3 class="av-card-heading">Pick fair meeting times</h3>
+          <p class="av-text-soft">Rank suggestions by required coverage, overall overlap, preference fit, and off-hours penalty.</p>
+        </AvCard>
       </div>
     </AvContainer>
   </section>
 
-  <!-- Why this mini app -->
   <section class="av-section">
-    <AvContainer size="narrow">
+    <AvContainer size="default">
       <div class="av-section-header">
-        <h2 class="av-section-title">Why Time Zone Scheduler feels different</h2>
-        <p class="av-section-lead">
-          A focused mini app inside the larger Ansiversa ecosystem.
-        </p>
+        <h2 class="av-section-title">FAQ</h2>
+        <p class="av-section-lead">Intentional V1 boundaries keep the app simple and production-ready.</p>
       </div>
-      <div class="av-section-body">
-        <ul class="space-y-2 text-slate-300 list-disc list-inside">
-          <li>Removes the need to search for another one-off tool online.</li>
-          <li>Keeps your workflow fast, clean, and repeatable.</li>
-          <li>Lives inside the same secure, familiar Ansiversa environment.</li>
-        </ul>
+      <div class="tz-faq-grid">
+        {faqItems.map((item) => (
+          <AvCard variant="soft" className="av-auth-stack-xs">
+            <h3 class="av-card-heading">{item.question}</h3>
+            <p class="av-text-soft">{item.answer}</p>
+          </AvCard>
+        ))}
       </div>
     </AvContainer>
   </section>
 
-  <!-- How it works -->
   <section class="av-section">
-    <AvContainer size="narrow">
-      <div class="av-section-header">
-        <h2 class="av-section-title">How it works</h2>
-        <p class="av-section-lead">
-          Simple, clear steps so people can start in under a minute.
-        </p>
-      </div>
-      <ol class="av-section-body space-y-2 text-slate-300 list-decimal list-inside">
-        <li>Open Time Zone Scheduler whenever this task comes up.</li>
-        <li>Paste, upload, or input exactly what you need to process.</li>
-        <li>Get a clean result you can download, copy, or reuse instantly.</li>
-      </ol>
-    </AvContainer>
-  </section>
-
-  <!-- Final CTA -->
-  <section class="av-section">
-    <AvContainer size="narrow">
-      <div class="av-section-header">
-        <h2 class="av-section-title">Ready to try Time Zone Scheduler?</h2>
-        <p class="av-section-lead">
-          Open the app, follow the simple flow, and let it handle the heavy lifting.
-        </p>
-      </div>
-      <div class="av-cta-row">
-        <AvButton href="https://time-zone-scheduler.ansiversa.com">Start with Time</AvButton>
-      </div>
+    <AvContainer size="default">
+      <AvCard variant="soft" className="tz-cta-card">
+        <div class="av-auth-stack-xs">
+          <h2 class="av-section-title">Ready to plan without guesswork?</h2>
+          <p class="av-text-soft">Create a saved schedule, add your participants, and generate ranked overlap slots.</p>
+        </div>
+        <AvButton href="/app">Open Time Zone Scheduler</AvButton>
+      </AvCard>
     </AvContainer>
   </section>
 </AppShell>

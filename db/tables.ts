@@ -1,64 +1,68 @@
-/**
- * Time Zone Scheduler - find overlapping meeting times.
- *
- * Design goals:
- * - User can create scheduling profiles and share "participants".
- * - Store preferred time ranges and generated suggestions.
- */
-
-import { defineTable, column, NOW } from "astro:db";
+import { NOW, column, defineTable } from "astro:db";
 
 export const Schedules = defineTable({
   columns: {
     id: column.text({ primaryKey: true }),
-    ownerUserId: column.text(),                         // who created this schedule
-
-    name: column.text(),                                // "Team sync", "Client meeting"
+    userId: column.text(),
+    title: column.text(),
     description: column.text({ optional: true }),
-
-    baseTimeZone: column.text({ optional: true }),      // default zone, e.g. "Asia/Dubai"
-    durationMinutes: column.number({ optional: true }), // typical meeting duration
-
+    meetingDate: column.text(),
+    durationMinutes: column.number(),
+    status: column.text({ default: "draft" }),
+    meetingMode: column.text({ default: "General" }),
+    bestSuggestionId: column.text({ optional: true }),
     createdAt: column.date({ default: NOW }),
     updatedAt: column.date({ default: NOW }),
   },
+  indexes: [
+    { name: "schedules_user_idx", on: "userId" },
+    { name: "schedules_user_status_idx", on: ["userId", "status"] },
+    { name: "schedules_user_meeting_date_idx", on: ["userId", "meetingDate"] },
+  ],
 });
 
 export const ScheduleParticipants = defineTable({
   columns: {
     id: column.text({ primaryKey: true }),
-    scheduleId: column.text({
-      references: () => Schedules.columns.id,
-    }),
-
-    name: column.text(),                                // "Karthik", "Astra", "Client"
-    timeZone: column.text(),                            // IANA tz, e.g. "Asia/Dubai", "America/New_York"
-    availabilityJson: column.text({ optional: true }),  // serialized weekly availability model
-
+    scheduleId: column.text(),
+    name: column.text(),
+    email: column.text({ optional: true }),
+    timezone: column.text(),
+    availabilityStartLocal: column.text(),
+    availabilityEndLocal: column.text(),
+    preferredStartLocal: column.text({ optional: true }),
+    preferredEndLocal: column.text({ optional: true }),
+    isRequired: column.boolean({ default: true }),
+    sortOrder: column.number({ default: 0 }),
     createdAt: column.date({ default: NOW }),
+    updatedAt: column.date({ default: NOW }),
   },
+  indexes: [
+    { name: "schedule_participants_schedule_idx", on: "scheduleId" },
+    { name: "schedule_participants_schedule_sort_idx", on: ["scheduleId", "sortOrder"] },
+  ],
 });
 
 export const ScheduleSuggestions = defineTable({
   columns: {
     id: column.text({ primaryKey: true }),
-    scheduleId: column.text({
-      references: () => Schedules.columns.id,
-    }),
-
-    suggestedStartUtc: column.date(),                   // UTC time
-    suggestedEndUtc: column.date(),
-
-    participantsJson: column.text({ optional: true }),  // who can attend, maybe boolean map per participant
-    score: column.number({ optional: true }),           // 0-100 suitability score
-    notes: column.text({ optional: true }),
-
+    scheduleId: column.text(),
+    startUtc: column.date(),
+    endUtc: column.date(),
+    participantCoverage: column.number(),
+    requiredCoverage: column.number(),
+    score: column.number(),
+    label: column.text(),
+    explanation: column.text({ optional: true }),
+    isSelected: column.boolean({ default: false }),
+    coveredParticipantIds: column.text({ optional: true }),
+    preferredParticipantIds: column.text({ optional: true }),
     createdAt: column.date({ default: NOW }),
+    updatedAt: column.date({ default: NOW }),
   },
+  indexes: [
+    { name: "schedule_suggestions_schedule_idx", on: "scheduleId" },
+    { name: "schedule_suggestions_schedule_selected_idx", on: ["scheduleId", "isSelected"] },
+    { name: "schedule_suggestions_schedule_score_idx", on: ["scheduleId", "score"] },
+  ],
 });
-
-export const tables = {
-  Schedules,
-  ScheduleParticipants,
-  ScheduleSuggestions,
-} as const;

@@ -1,0 +1,230 @@
+---
+import {
+  AvBreadcrumb,
+  AvButton,
+  AvCard,
+  AvContainer,
+  AvEmptyState,
+  AvInput,
+  AvSelect,
+  AvTextarea,
+  AvCheckbox,
+} from "@ansiversa/components";
+import { actions } from "astro:actions";
+import CreateDrawer from "../../../components/drawers/CreateDrawer.astro";
+import AppShell from "../../../layouts/AppShell.astro";
+
+const scheduleId = Astro.params.id ?? "";
+const detailResult = await Astro.callAction(actions.timeZoneScheduler.getScheduleDetail, { id: scheduleId });
+const data = (detailResult as any)?.data ?? (detailResult as any) ?? {};
+const detail = data?.detail;
+
+if (!detail) {
+  return Astro.redirect("/app");
+}
+
+const timezoneOptions = Array.isArray(data?.timezoneOptions) ? data.timezoneOptions : [];
+const meetingModes = Array.isArray(data?.meetingModes) ? data.meetingModes : ["General"];
+const initialState = { detail, timezoneOptions, meetingModes };
+
+const title = `${detail.schedule.title} – Time Zone Scheduler`;
+const description = "Manage participants and generate meeting recommendations.";
+---
+
+<AppShell title={title} description={description}>
+  <section class="av-faq-public__crumb">
+    <AvContainer>
+      <AvBreadcrumb items={[{ label: "Home", href: "/" }, { label: "Schedules", href: "/app" }, { label: detail.schedule.title }]} />
+    </AvContainer>
+  </section>
+
+  <section class="av-section">
+    <AvContainer>
+      <div
+        class="av-auth-stack-lg"
+        x-data="$store.timeZoneScheduler"
+        x-init="initDetail(JSON.parse($el.dataset.initial || '{}'))"
+        data-initial={JSON.stringify(initialState)}
+      >
+        <AvCard className="av-auth-stack-md">
+          <div class="av-row-between">
+            <div class="av-auth-stack-xs">
+              <p class="av-kicker">Schedule detail</p>
+              <h1 class="av-section-title" x-text="schedule?.title || ''"></h1>
+              <p class="av-text-soft">Update the schedule, manage participants, and generate ranked overlap suggestions.</p>
+            </div>
+            <div class="av-row-wrap">
+              <AvButton variant="ghost" href="/app">Back to schedules</AvButton>
+              <AvButton variant="ghost" type="button" @click={`if (schedule && confirm('Delete this schedule permanently?')) deleteSchedule(schedule.id)`}>Delete</AvButton>
+            </div>
+          </div>
+          <template x-if="error">
+            <div class="av-alert av-alert-danger" role="status" x-text="error"></div>
+          </template>
+          <template x-if="success">
+            <div class="av-alert av-alert-success" role="status" x-text="success"></div>
+          </template>
+        </AvCard>
+
+        <div class="tz-detail-grid">
+          <AvCard className="av-auth-stack-md">
+            <div class="av-row-between">
+              <div class="av-auth-stack-xxs">
+                <h2 class="av-card-heading">Schedule settings</h2>
+                <p class="av-text-soft">Changing the date, duration, or participant data resets saved suggestions.</p>
+              </div>
+              <span class="tz-status-badge" :data-status="schedule?.status" x-text="schedule?.status || 'draft'"></span>
+            </div>
+
+            <form class="av-auth-stack-sm" @submit.prevent="saveSchedule()">
+              <AvInput label="Title" name="title" x-model="scheduleForm.title" required />
+              <AvTextarea label="Description" name="description" rows={3} x-model="scheduleForm.description" />
+              <div class="tz-form-grid">
+                <AvInput label="Meeting date" name="meeting-date" type="date" x-model="scheduleForm.meetingDate" required />
+                <AvInput label="Duration (minutes)" name="duration-minutes" type="number" min="15" step="15" x-model="scheduleForm.durationMinutes" required />
+              </div>
+              <AvSelect label="Meeting mode" name="meeting-mode" x-model="scheduleForm.meetingMode" required>
+                {meetingModes.map((mode: string) => (
+                  <option value={mode}>{mode}</option>
+                ))}
+              </AvSelect>
+              <div class="av-row-wrap">
+                <AvButton type="submit" :disabled="loading">Save schedule</AvButton>
+                <AvButton variant="ghost" type="button" @click={`if (schedule && confirm('Archive this schedule?')) archiveSchedule(schedule.id)`}>Archive</AvButton>
+              </div>
+            </form>
+          </AvCard>
+
+          <AvCard variant="soft" className="av-auth-stack-md">
+            <div class="av-row-between">
+              <div class="av-auth-stack-xxs">
+                <h2 class="av-card-heading">Participants</h2>
+                <p class="av-text-soft">Each participant needs a time zone and availability window.</p>
+              </div>
+              <AvButton type="button" @click="openNewParticipantDrawer()">Add participant</AvButton>
+            </div>
+
+            <template x-if="participants.length === 0">
+              <AvEmptyState headline="No participants yet" description="Add participants before generating suggestions." />
+            </template>
+
+            <template x-if="participants.length > 0">
+              <div class="tz-participant-list">
+                <template x-for="participant in participants" :key="participant.id">
+                  <div class="tz-participant-card">
+                    <div class="av-row-between">
+                      <div class="av-auth-stack-xxs">
+                        <div class="tz-inline-row">
+                          <h3 class="av-card-heading" x-text="participant.name"></h3>
+                          <span class="tz-required-badge" x-show="participant.isRequired" x-cloak>Required</span>
+                        </div>
+                        <p class="av-text-soft" x-text="participant.email || participant.timezone"></p>
+                      </div>
+                      <div class="av-row-wrap">
+                        <AvButton variant="ghost" type="button" @click="openEditParticipantDrawer(participant)">Edit</AvButton>
+                        <AvButton variant="ghost" type="button" @click={`if (confirm('Remove this participant?')) deleteParticipant(participant.id)`}>Remove</AvButton>
+                      </div>
+                    </div>
+                    <div class="tz-meta-grid">
+                      <p class="av-text-soft"><strong>Time zone:</strong> <span x-text="participant.timezone"></span></p>
+                      <p class="av-text-soft"><strong>Availability:</strong> <span x-text="`${participant.availabilityStartLocal} - ${participant.availabilityEndLocal}`"></span></p>
+                      <p class="av-text-soft"><strong>Preferred:</strong> <span x-text="participant.preferredStartLocal && participant.preferredEndLocal ? `${participant.preferredStartLocal} - ${participant.preferredEndLocal}` : 'Not set'"></span></p>
+                    </div>
+                  </div>
+                </template>
+              </div>
+            </template>
+          </AvCard>
+        </div>
+
+        <AvCard variant="soft" className="av-auth-stack-md">
+          <div class="av-row-between">
+            <div class="av-auth-stack-xxs">
+              <h2 class="av-card-heading">Suggestions</h2>
+              <p class="av-text-soft">
+                Generate ranked slots based on required coverage, total overlap, preferred hours, and off-hours fairness.
+              </p>
+            </div>
+            <AvButton type="button" @click="generateSuggestions()" :disabled="suggestionsLoading">Generate suggestions</AvButton>
+          </div>
+
+          <template x-if="suggestions.length === 0">
+            <AvEmptyState headline="No suggestions yet" description="Generate suggestions after adding participants." />
+          </template>
+
+          <template x-if="suggestions.length > 0">
+            <div class="tz-suggestion-list">
+              <template x-for="suggestion in suggestions" :key="suggestion.id">
+                <div class="tz-suggestion-card" :data-selected="suggestion.isSelected ? 'true' : 'false'">
+                  <div class="av-row-between">
+                    <div class="av-auth-stack-xxs">
+                      <div class="tz-inline-row">
+                        <span class="tz-status-badge" :data-status="suggestion.label" x-text="suggestion.label"></span>
+                        <span class="tz-required-badge" x-show="suggestion.isSelected" x-cloak>Selected</span>
+                      </div>
+                      <h3 class="av-card-heading" x-text="suggestion.timeRangeLabelUtc"></h3>
+                      <p class="av-text-soft" x-text="suggestion.explanation || 'Ranked by coverage and fairness.'"></p>
+                    </div>
+                    <div class="av-auth-stack-xxs tz-score-block">
+                      <p class="av-text-soft" x-text="`Coverage ${suggestion.participantCoverage}`"></p>
+                      <p class="av-text-soft" x-text="`Required ${suggestion.requiredCoverage}`"></p>
+                    </div>
+                  </div>
+
+                  <div class="tz-local-times">
+                    <template x-for="localTime in suggestion.localTimes" :key="`${suggestion.id}-${localTime.participantId}`">
+                      <div class="tz-local-time-row" :data-covered="localTime.covered ? 'true' : 'false'">
+                        <div>
+                          <strong x-text="localTime.participantName"></strong>
+                          <span class="av-text-soft" x-text="` · ${localTime.timezone}`"></span>
+                        </div>
+                        <p class="av-text-soft" x-text="localTime.timeLabel"></p>
+                      </div>
+                    </template>
+                  </div>
+
+                  <div class="av-row-wrap">
+                    <AvButton type="button" x-show="!suggestion.isSelected" x-cloak @click="selectSuggestion(suggestion.id)">Select recommendation</AvButton>
+                    <span class="av-text-soft" x-show="suggestion.isSelected" x-cloak>Current best slot</span>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </template>
+        </AvCard>
+
+        <template x-if="participantDrawerOpen">
+          <CreateDrawer
+            title="Participant"
+            description="Add local availability in the participant's own time zone."
+            onClose="$store.timeZoneScheduler.closeParticipantDrawer()"
+          >
+            <form id="participant-form" class="av-auth-stack-sm" @submit.prevent="saveParticipant()">
+              <AvInput label="Name" name="participant-name" x-model="participantForm.name" required />
+              <AvInput label="Email (optional)" name="participant-email" type="email" x-model="participantForm.email" />
+              <AvSelect label="Time zone" name="participant-timezone" x-model="participantForm.timezone" required>
+                {timezoneOptions.map((zone: string) => (
+                  <option value={zone}>{zone}</option>
+                ))}
+              </AvSelect>
+              <div class="tz-form-grid">
+                <AvInput label="Availability start" name="availability-start" type="time" x-model="participantForm.availabilityStartLocal" required />
+                <AvInput label="Availability end" name="availability-end" type="time" x-model="participantForm.availabilityEndLocal" required />
+              </div>
+              <div class="tz-form-grid">
+                <AvInput label="Preferred start" name="preferred-start" type="time" x-model="participantForm.preferredStartLocal" />
+                <AvInput label="Preferred end" name="preferred-end" type="time" x-model="participantForm.preferredEndLocal" />
+              </div>
+              <AvCheckbox label="This participant is required" name="is-required" x-model="participantForm.isRequired" />
+            </form>
+
+            <Fragment slot="actions">
+              <AvButton variant="ghost" type="button" @click="$store.timeZoneScheduler.closeParticipantDrawer()">Cancel</AvButton>
+              <AvButton type="submit" form="participant-form" :disabled="participantLoading">Save participant</AvButton>
+            </Fragment>
+          </CreateDrawer>
+        </template>
+      </div>
+    </AvContainer>
+  </section>
+</AppShell>

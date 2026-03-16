@@ -1,0 +1,120 @@
+---
+import { AvButton, AvCard, AvContainer, AvEmptyState, AvInput, AvSelect, AvTextarea } from "@ansiversa/components";
+import { actions } from "astro:actions";
+import CreateDrawer from "../../components/drawers/CreateDrawer.astro";
+import AppShell from "../../layouts/AppShell.astro";
+import type { ScheduleDTO } from "../../modules/time-zone-scheduler/types";
+
+const title = "Your Schedules – Time Zone Scheduler";
+const description = "Create and manage saved time-zone planning sessions.";
+
+const listResult = await Astro.callAction(actions.timeZoneScheduler.listSchedules, {});
+const data = (listResult as any)?.data ?? (listResult as any) ?? {};
+const schedules = (data?.items ?? []) as ScheduleDTO[];
+const timezoneOptions = Array.isArray(data?.timezoneOptions) ? data.timezoneOptions : [];
+const meetingModes = Array.isArray(data?.meetingModes) ? data.meetingModes : ["General"];
+
+const initialState = {
+  schedules,
+  timezoneOptions,
+  meetingModes,
+};
+---
+
+<AppShell title={title} description={description}>
+  <section class="av-section">
+    <AvContainer>
+      <div
+        class="av-auth-stack-lg"
+        x-data="$store.timeZoneScheduler"
+        x-init="initList(JSON.parse($el.dataset.initial || '{}'))"
+        data-initial={JSON.stringify(initialState)}
+      >
+        <AvCard className="av-auth-stack-md">
+          <div class="av-row-between">
+            <div class="av-auth-stack-xs">
+              <p class="av-kicker">Time Zone Scheduler</p>
+              <h1 class="av-section-title">Saved schedules</h1>
+              <p class="av-text-soft">Create a planning session, then add participants and generate ranked slots.</p>
+            </div>
+            <AvButton type="button" @click="openCreateDrawer()">New schedule</AvButton>
+          </div>
+          <template x-if="error">
+            <div class="av-alert av-alert-danger" role="status" x-text="error"></div>
+          </template>
+          <template x-if="success">
+            <div class="av-alert av-alert-success" role="status" x-text="success"></div>
+          </template>
+        </AvCard>
+
+        <template x-if="createDrawerOpen">
+          <CreateDrawer
+            title="Create schedule"
+            description="Create a single-date planning session, then add participants on the detail page."
+            onClose="$store.timeZoneScheduler.closeCreateDrawer()"
+          >
+            <form id="schedule-create-form" class="av-auth-stack-sm" @submit.prevent="createSchedule()">
+              <AvInput label="Title" name="title" placeholder="e.g. APAC product sync" x-model="scheduleForm.title" required />
+              <AvTextarea label="Description" name="description" rows={3} placeholder="Optional notes or context" x-model="scheduleForm.description" />
+              <div class="tz-form-grid">
+                <AvInput label="Meeting date" name="meeting-date" type="date" x-model="scheduleForm.meetingDate" required />
+                <AvInput label="Duration (minutes)" name="duration-minutes" type="number" min="15" step="15" x-model="scheduleForm.durationMinutes" required />
+              </div>
+              <AvSelect label="Meeting mode" name="meeting-mode" x-model="scheduleForm.meetingMode" required>
+                {meetingModes.map((mode: string) => (
+                  <option value={mode}>{mode}</option>
+                ))}
+              </AvSelect>
+            </form>
+
+            <Fragment slot="actions">
+              <AvButton variant="ghost" type="button" @click="$store.timeZoneScheduler.closeCreateDrawer()">Cancel</AvButton>
+              <AvButton type="submit" form="schedule-create-form" :disabled="createLoading">Create schedule</AvButton>
+            </Fragment>
+          </CreateDrawer>
+        </template>
+
+        <AvCard variant="soft" className="av-auth-stack-md">
+          <div class="av-row-between">
+            <h2 class="av-card-heading">All schedules</h2>
+            <p class="av-text-soft" x-text="`${schedules.length} total`"></p>
+          </div>
+
+          <template x-if="schedules.length === 0">
+            <AvEmptyState headline="No schedules yet" description="Create your first schedule to start comparing time zones." />
+          </template>
+
+          <template x-if="schedules.length > 0">
+            <div class="tz-schedule-grid">
+              <template x-for="schedule in schedules" :key="schedule.id">
+                <div class="av-card av-card-soft tz-schedule-card">
+                  <div class="av-auth-stack-sm">
+                    <div class="av-row-between">
+                      <div class="av-auth-stack-xxs">
+                        <h3 class="av-card-heading" x-text="schedule.title"></h3>
+                        <p class="av-text-soft" x-text="schedule.description || 'No additional notes.'"></p>
+                      </div>
+                      <span class="tz-status-badge" :data-status="schedule.status" x-text="schedule.status"></span>
+                    </div>
+
+                    <div class="tz-meta-grid">
+                      <p class="av-text-soft"><strong>Date:</strong> <span x-text="schedule.meetingDate"></span></p>
+                      <p class="av-text-soft"><strong>Duration:</strong> <span x-text="`${schedule.durationMinutes} min`"></span></p>
+                      <p class="av-text-soft"><strong>Participants:</strong> <span x-text="schedule.participantCount"></span></p>
+                      <p class="av-text-soft"><strong>Suggestions:</strong> <span x-text="schedule.suggestionCount"></span></p>
+                    </div>
+
+                    <div class="av-row-wrap">
+                      <AvButton href="#" x-bind:href="`/app/schedules/${schedule.id}`">Open</AvButton>
+                      <AvButton variant="ghost" type="button" @click={`if (confirm('Archive this schedule?')) archiveSchedule(schedule.id)`}>Archive</AvButton>
+                    </div>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </template>
+        </AvCard>
+      </div>
+    </AvContainer>
+  </section>
+</AppShell>
