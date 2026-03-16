@@ -136,7 +136,7 @@ export const normalizeScheduleRow = (
   meta?: { participantCount?: number; suggestionCount?: number; selectedSuggestionLabel?: string | null },
 ): ScheduleDTO => ({
   id: String(row.id),
-  title: normalizeText(row.title),
+  title: normalizeText(row.name),
   description: normalizeMultilineText(row.description ?? ""),
   meetingDate: String(row.meetingDate),
   durationMinutes: Number(row.durationMinutes ?? 0),
@@ -155,7 +155,7 @@ export const normalizeParticipantRow = (row: any): ParticipantDTO => ({
   scheduleId: String(row.scheduleId),
   name: normalizeText(row.name),
   email: normalizeText(row.email ?? "") || null,
-  timezone: String(row.timezone),
+  timezone: String(row.timeZone),
   availabilityStartLocal: String(row.availabilityStartLocal),
   availabilityEndLocal: String(row.availabilityEndLocal),
   preferredStartLocal: row.preferredStartLocal ? String(row.preferredStartLocal) : null,
@@ -188,8 +188,8 @@ export const normalizeSuggestionRow = (
   coveredParticipantIds: string[],
   preferredParticipantIds: string[],
 ): SuggestionDTO => {
-  const startUtc = new Date(row.startUtc).toISOString();
-  const endUtc = new Date(row.endUtc).toISOString();
+  const startUtc = new Date(row.suggestedStartUtc).toISOString();
+  const endUtc = new Date(row.suggestedEndUtc).toISOString();
   return {
     id: String(row.id),
     scheduleId: String(row.scheduleId),
@@ -199,7 +199,7 @@ export const normalizeSuggestionRow = (
     requiredCoverage: Number(row.requiredCoverage ?? 0),
     score: Number(row.score ?? 0),
     label: (row.label ?? "good") as SuggestionDTO["label"],
-    explanation: normalizeMultilineText(row.explanation ?? "") || null,
+    explanation: normalizeMultilineText(row.notes ?? "") || null,
     isSelected: Boolean(row.isSelected),
     timeRangeLabelUtc: formatUtcRangeLabel(startUtc, endUtc),
     localTimes: buildSuggestionLocalTimes(

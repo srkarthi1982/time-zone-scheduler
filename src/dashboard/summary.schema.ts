@@ -14,7 +14,7 @@ export type TimeZoneSchedulerDashboardSummaryV1 = {
 export const buildTimeZoneSchedulerSummary = async (
   userId: string,
 ): Promise<TimeZoneSchedulerDashboardSummaryV1> => {
-  const schedules = await db.select().from(Schedules).where(eq(Schedules.userId, userId));
+  const schedules = await db.select().from(Schedules).where(eq(Schedules.ownerUserId, userId));
   const scheduleIds = schedules.map((schedule) => String(schedule.id));
   const today = new Date().toISOString().slice(0, 10);
   const generatedSchedules = schedules.filter((schedule) => String(schedule.status) === "generated");

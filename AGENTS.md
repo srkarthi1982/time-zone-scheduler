@@ -65,5 +65,6 @@ V1 intentionally does not include recurrence, calendar sync, invitations, org wo
 
 ## Task Log (Recent)
 
+- 2026-03-16 Remote schema alignment + shared-title verification: aligned V1 schedule schema field names with the previously existing remote Astro DB prototype (`ownerUserId`/legacy overlap fields) so forced remote reset + push could succeed, then locally verified mini-app title resolution against packed `@ansiversa/components@0.0.170` with the new `time-zone-scheduler` registry entry. Verification: remote `astro db push --remote --force-reset` ✅, `npm run typecheck` ✅, `npm run build` ✅. Publish of `@ansiversa/components@0.0.170` remains blocked by npm registry permission `404`, so app verification used the local tarball fallback instead of a published version bump.
 - 2026-03-16 Bootstrapped Time Zone Scheduler V1 from `app-starter`: replaced example/admin/docs/bookmark starter surfaces with Time Zone Scheduler landing + `/app` + `/app/schedules/[id]`, added `Schedules`/`ScheduleParticipants`/`ScheduleSuggestions` DB tables, implemented schedule/participant/suggestion actions + deterministic overlap engine + dashboard/notification webhook integration, preserved shared auth/middleware/layout wiring, and documented V1 scope/non-goals. Verification: `npm run typecheck` ✅, `npm run build` ✅.
 - Keep newest first; include date and short summary.

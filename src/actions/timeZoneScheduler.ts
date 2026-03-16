@@ -130,7 +130,7 @@ const findScheduleForUser = async (userId: string, scheduleId: string) => {
   const row = await db
     .select()
     .from(Schedules)
-    .where(and(eq(Schedules.id, scheduleId), eq(Schedules.userId, userId)))
+    .where(and(eq(Schedules.id, scheduleId), eq(Schedules.ownerUserId, userId)))
     .get();
   return row ?? null;
 };
@@ -210,7 +210,11 @@ const loadSuggestionsForSchedule = async (scheduleId: string, participants: Part
     .select()
     .from(ScheduleSuggestions)
     .where(eq(ScheduleSuggestions.scheduleId, scheduleId))
-    .orderBy(desc(ScheduleSuggestions.isSelected), desc(ScheduleSuggestions.score), ScheduleSuggestions.startUtc);
+    .orderBy(
+      desc(ScheduleSuggestions.isSelected),
+      desc(ScheduleSuggestions.score),
+      ScheduleSuggestions.suggestedStartUtc,
+    );
 
   return rows.map((row) => {
     const coveredParticipantIds = normalizeText(row.coveredParticipantIds ?? "")
@@ -278,7 +282,7 @@ export const listSchedules = defineAction({
     const schedules = await db
       .select()
       .from(Schedules)
-      .where(eq(Schedules.userId, user.id))
+      .where(eq(Schedules.ownerUserId, user.id))
       .orderBy(desc(Schedules.updatedAt), desc(Schedules.createdAt));
 
     const meta = await buildScheduleListMeta(schedules);
@@ -315,14 +319,15 @@ export const createSchedule = defineAction({
       .insert(Schedules)
       .values({
         id: randomUUID(),
-        userId: user.id,
-        title: payload.title,
+        ownerUserId: user.id,
+        name: payload.title,
         description: payload.description,
         meetingDate: payload.meetingDate,
         durationMinutes: payload.durationMinutes,
         status: "draft",
         meetingMode: payload.meetingMode,
         bestSuggestionId: null,
+        baseTimeZone: null,
         createdAt: now,
         updatedAt: now,
       })
@@ -360,7 +365,7 @@ export const updateSchedule = defineAction({
 
     const payload = normalizeScheduleInput(data);
     const previousChanged =
-      scheduleRecord.title !== payload.title ||
+      scheduleRecord.name !== payload.title ||
       normalizeText(scheduleRecord.description ?? "") !== normalizeText(payload.description ?? "") ||
       String(scheduleRecord.meetingDate) !== payload.meetingDate ||
       Number(scheduleRecord.durationMinutes) !== payload.durationMinutes ||
@@ -369,7 +374,7 @@ export const updateSchedule = defineAction({
     await db
       .update(Schedules)
       .set({
-        title: payload.title,
+        name: payload.title,
         description: payload.description,
         meetingDate: payload.meetingDate,
         durationMinutes: payload.durationMinutes,
@@ -411,7 +416,7 @@ export const archiveSchedule = defineAction({
     emitAppEvent({
       userId: user.id,
       title: "Schedule archived",
-      message: `“${normalizeText(scheduleRecord.title)}” moved to archive.`,
+      message: `“${normalizeText(scheduleRecord.name)}” moved to archive.`,
       meta: { scheduleId: id },
       activityEvent: "schedules.archived",
       entityId: id,
@@ -459,11 +464,12 @@ export const addParticipant = defineAction({
         scheduleId: input.scheduleId,
         name: payload.name,
         email: payload.email,
-        timezone: payload.timezone,
+        timeZone: payload.timezone,
         availabilityStartLocal: payload.availabilityStartLocal,
         availabilityEndLocal: payload.availabilityEndLocal,
         preferredStartLocal: payload.preferredStartLocal,
         preferredEndLocal: payload.preferredEndLocal,
+        availabilityJson: null,
         isRequired: payload.isRequired,
         sortOrder,
         createdAt: now,
@@ -476,7 +482,7 @@ export const addParticipant = defineAction({
     emitAppEvent({
       userId: user.id,
       title: "Participant added",
-      message: `${payload.name} was added to “${normalizeText(scheduleRecord.title)}”.`,
+      message: `${payload.name} was added to “${normalizeText(scheduleRecord.name)}”.`,
       meta: { scheduleId: input.scheduleId, participantId: inserted[0]?.id ?? null },
       activityEvent: "participants.added",
       entityId: inserted[0]?.id ? String(inserted[0].id) : undefined,
@@ -507,7 +513,7 @@ export const updateParticipant = defineAction({
       .set({
         name: payload.name,
         email: payload.email,
-        timezone: payload.timezone,
+        timeZone: payload.timezone,
         availabilityStartLocal: payload.availabilityStartLocal,
         availabilityEndLocal: payload.availabilityEndLocal,
         preferredStartLocal: payload.preferredStartLocal,
@@ -581,16 +587,17 @@ export const generateSuggestions = defineAction({
       generated.map((suggestion) => ({
         id: suggestion.id,
         scheduleId: id,
-        startUtc: new Date(suggestion.startUtc),
-        endUtc: new Date(suggestion.endUtc),
+        suggestedStartUtc: new Date(suggestion.startUtc),
+        suggestedEndUtc: new Date(suggestion.endUtc),
         participantCoverage: suggestion.participantCoverage,
         requiredCoverage: suggestion.requiredCoverage,
         score: suggestion.score,
         label: suggestion.label,
-        explanation: suggestion.explanation,
+        notes: suggestion.explanation,
         isSelected: suggestion.isSelected,
         coveredParticipantIds: suggestion.coveredParticipantIds.join(","),
         preferredParticipantIds: suggestion.preferredParticipantIds.join(","),
+        participantsJson: JSON.stringify(suggestion.coveredParticipantIds),
         createdAt: now,
         updatedAt: now,
       })),
@@ -608,7 +615,7 @@ export const generateSuggestions = defineAction({
     emitAppEvent({
       userId: user.id,
       title: "Suggestions generated",
-      message: `${generated.length} ranked meeting options generated for “${normalizeText(scheduleRecord.title)}”.`,
+      message: `${generated.length} ranked meeting options generated for “${normalizeText(scheduleRecord.name)}”.`,
       meta: { scheduleId: id, suggestionCount: generated.length },
       activityEvent: "suggestions.generated",
       entityId: generated[0]?.id,
