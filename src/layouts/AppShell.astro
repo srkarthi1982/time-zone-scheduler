@@ -2,8 +2,8 @@
 import "@ansiversa/components/styles/global.css";
 import "../styles/global.css";
 import { WebLayout as AvWebLayout } from "@ansiversa/components";
+import AppMiniAppBar from "../components/AppMiniAppBar.astro";
 import { SESSION_COOKIE_NAME, verifySessionToken } from "../lib/auth";
-import { APP_KEY } from "../app.meta";
 
 interface Props {
   title?: string;
@@ -79,8 +79,7 @@ const miniAppLinks = [
 <AvWebLayout
   {...props}
   notificationUnreadCount={notificationUnreadCount}
-  miniAppKey={APP_KEY}
-  links={miniAppLinks}
 >
+  <AppMiniAppBar links={miniAppLinks} />
   <slot />
 </AvWebLayout>

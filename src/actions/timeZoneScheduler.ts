@@ -13,7 +13,7 @@ import {
   inArray,
 } from "astro:db";
 import { requireUser } from "./_guards";
-import { APP_KEY } from "../app.meta";
+import { APP_META } from "../app.meta";
 import { buildTimeZoneSchedulerSummary } from "../dashboard/summary.schema";
 import { notifyParent } from "../lib/notifyParent";
 import { pushTimeZoneSchedulerActivity } from "../lib/pushActivity";
@@ -254,7 +254,7 @@ const emitAppEvent = (params: {
   entityId?: string;
 }) => {
   void notifyParent({
-    appKey: APP_KEY,
+    appKey: APP_META.key,
     userId: params.userId,
     title: params.title,
     message: params.message,

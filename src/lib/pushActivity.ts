@@ -1,11 +1,11 @@
-import { APP_KEY } from "../app.meta";
+import { APP_META } from "../app.meta";
 import type { TimeZoneSchedulerDashboardSummaryV1 } from "../dashboard/summary.schema";
 import { postWebhook } from "./webhook";
 
 const resolveActivityUrl = (baseUrl?: string | null, overrideUrl?: string | null) => {
   if (overrideUrl) return overrideUrl;
   if (!baseUrl) return null;
-  return `${baseUrl.replace(/\/$/, "")}/api/webhooks/${APP_KEY}-activity.json`;
+  return `${baseUrl.replace(/\/$/, "")}/api/webhooks/${APP_META.key}-activity.json`;
 };
 
 type TimeZoneSchedulerActivity = {
@@ -27,7 +27,7 @@ export const pushTimeZoneSchedulerActivity = async (params: {
     const url = resolveActivityUrl(baseUrl, overrideUrl);
     const payload = {
       userId: params.userId,
-      appId: APP_KEY,
+      appId: APP_META.key,
       activity: params.activity,
       summary: params.summary,
     };
@@ -36,7 +36,7 @@ export const pushTimeZoneSchedulerActivity = async (params: {
       url,
       secret,
       payload,
-      appKey: APP_KEY,
+      appKey: APP_META.key,
     });
   } catch (error) {
     if (import.meta.env.DEV) {
