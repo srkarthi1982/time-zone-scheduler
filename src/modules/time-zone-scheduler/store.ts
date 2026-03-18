@@ -188,7 +188,8 @@ export class TimeZoneSchedulerStore extends AvBaseStore {
     this.error = null;
     this.success = null;
     try {
-      await actions.timeZoneScheduler.archiveSchedule({ id });
+      const result = await actions.timeZoneScheduler.archiveSchedule({ id });
+      this.unwrapResult(result);
       if (typeof window !== "undefined") {
         window.location.href = "/app";
       }
@@ -204,7 +205,8 @@ export class TimeZoneSchedulerStore extends AvBaseStore {
     this.error = null;
     this.success = null;
     try {
-      await actions.timeZoneScheduler.deleteSchedule({ id });
+      const result = await actions.timeZoneScheduler.deleteSchedule({ id });
+      this.unwrapResult(result);
       if (typeof window !== "undefined") {
         window.location.href = "/app";
       }
