@@ -65,6 +65,7 @@ V1 intentionally does not include recurrence, calendar sync, invitations, org wo
 
 ## Task Log (Recent)
 
+- 2026-04-05 Populated `docs/app-spec.md` with implementation-aligned V1 documentation for remaining release-app coverage.
 - 2026-03-18 Full verification sweep (pre-launch): audited public/auth/app routes and core schedule/participant/suggestion flows, ran launch integrity checks, and applied a low-risk client-side action-result handling fix so archive/delete schedule operations now surface action errors instead of potentially redirecting on failed responses. Verification: `npm run typecheck` ✅, `npm run build` ✅, `DEV_BYPASS_AUTH=true npm run dev -- --host 127.0.0.1 --port 4321` + curl route sweep ⚠️ (dev runtime returned `ActionsCantBeLoaded` / `Invalid URL` from `astro:db` env setup in this container).
 - 2026-03-18 Components lock sync: upgraded `@ansiversa/components` to `^0.0.169` and refreshed the lockfile for the pre-launch ecosystem lock. Verification: `npm run typecheck` ✅, `npm run build` ✅.
 - 2026-03-17 Ported App Starter V2 title pattern into Time Zone Scheduler: added `APP_META`, introduced a local `AppMiniAppBar` wrapper that renders the visible mini-app title from app metadata, rewired `AppShell` off shared `miniAppKey` fallback behavior, and aligned webhook app-key usage to metadata. Verification: `npm run typecheck` ✅, `npm run build` ✅. Manual browser confirmation pending: top mini-app title should display `Time Zone Scheduler` instead of the slug.
